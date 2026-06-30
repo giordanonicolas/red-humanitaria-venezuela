@@ -400,62 +400,59 @@ create policy "perfiles_insertar_trigger" on public.perfiles
 create policy "perfiles_admin_ver_todos" on public.perfiles
   for select using (public.usuario_es_admin());
 
-create policy "centros_lectura_autenticado" on public.centros
+create policy "centros_lectura_publica" on public.centros
   for select using (auth.role() = 'authenticated');
 
-create policy "centros_escritura_gestion" on public.centros
+create policy "centros_admin_todo" on public.centros
+  for all using (
+    exists (select 1 from public.perfiles p where p.usuario_id = auth.uid() and p.rol = 'administrador')
+  );
+
+create policy "centros_insertar_responsable" on public.centros
   for insert with check (
-    exists (
-      select 1 from public.perfiles p
-      where p.usuario_id = auth.uid()
-        and p.rol in ('administrador', 'responsable_centro')
-    )
+    exists (select 1 from public.perfiles p where p.usuario_id = auth.uid() and p.rol = 'responsable_centro')
   );
 
 create policy "centros_actualizar_gestion" on public.centros
   for update using (
-    exists (
-      select 1 from public.perfiles p
-      where p.usuario_id = auth.uid()
-        and p.rol in ('administrador', 'responsable_centro')
-    )
-  );
-
-create policy "centros_eliminar_admin" on public.centros
-  for delete using (
-    exists (
-      select 1 from public.perfiles p
-      where p.usuario_id = auth.uid() and p.rol = 'administrador'
-    )
+    responsable_id in (select id from public.perfiles where usuario_id = auth.uid())
+    or exists (select 1 from public.perfiles p where p.usuario_id = auth.uid() and p.rol = 'administrador')
   );
 
 create policy "inventario_lectura_autenticado" on public.inventario
   for select using (auth.role() = 'authenticated');
 
+create policy "inventario_admin_todo" on public.inventario
+  for all using (
+    exists (select 1 from public.perfiles p where p.usuario_id = auth.uid() and p.rol = 'administrador')
+  );
+
 create policy "inventario_insertar_gestion" on public.inventario
   for insert with check (
     exists (
-      select 1 from public.perfiles p
-      where p.usuario_id = auth.uid()
-        and p.rol in ('administrador', 'responsable_centro')
+      select 1 from public.centros c
+      join public.perfiles p on p.id = c.responsable_id
+      where c.id = centro_id and p.usuario_id = auth.uid()
     )
+    or exists (select 1 from public.perfiles p where p.usuario_id = auth.uid() and p.rol = 'administrador')
   );
 
 create policy "inventario_actualizar_gestion" on public.inventario
   for update using (
     exists (
-      select 1 from public.perfiles p
-      where p.usuario_id = auth.uid()
-        and p.rol in ('administrador', 'responsable_centro')
+      select 1 from public.centros c
+      join public.perfiles p on p.id = c.responsable_id
+      where c.id = centro_id and p.usuario_id = auth.uid()
     )
+    or exists (select 1 from public.perfiles p where p.usuario_id = auth.uid() and p.rol = 'administrador')
   );
 
-create policy "inventario_eliminar_gestion" on public.inventario
+create policy "inventario_eliminar_responsable" on public.inventario
   for delete using (
     exists (
-      select 1 from public.perfiles p
-      where p.usuario_id = auth.uid()
-        and p.rol in ('administrador', 'responsable_centro')
+      select 1 from public.centros c
+      join public.perfiles p on p.id = c.responsable_id
+      where c.id = centro_id and p.usuario_id = auth.uid()
     )
   );
 
@@ -463,7 +460,10 @@ create policy "donaciones_lectura_autenticado" on public.donaciones
   for select using (auth.role() = 'authenticated');
 
 create policy "donaciones_insertar_autenticado" on public.donaciones
-  for insert with check (auth.role() = 'authenticated');
+  for insert with check (
+    donante_id in (select id from public.perfiles where usuario_id = auth.uid())
+    or donante_id is null
+  );
 
 create policy "donaciones_actualizar_gestion" on public.donaciones
   for update using (
@@ -481,7 +481,9 @@ create policy "alojamientos_lectura_autenticado" on public.alojamientos
   for select using (auth.role() = 'authenticated');
 
 create policy "alojamientos_insertar_autenticado" on public.alojamientos
-  for insert with check (auth.role() = 'authenticated');
+  for insert with check (
+    anfitriion_id in (select id from public.perfiles where usuario_id = auth.uid())
+  );
 
 create policy "alojamientos_actualizar_propio_o_admin" on public.alojamientos
   for update using (
@@ -528,7 +530,10 @@ create policy "solicitudes_lectura_autenticado" on public.solicitudes_ayuda
   for select using (auth.role() = 'authenticated');
 
 create policy "solicitudes_insertar_autenticado" on public.solicitudes_ayuda
-  for insert with check (auth.role() = 'authenticated');
+  for insert with check (
+    solicitante_id in (select id from public.perfiles where usuario_id = auth.uid())
+    or solicitante_id is null
+  );
 
 create policy "solicitudes_actualizar_gestion" on public.solicitudes_ayuda
   for update using (
