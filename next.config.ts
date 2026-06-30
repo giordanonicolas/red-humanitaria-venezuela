@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [],
   },
+  experimental: {
+    webpackBuildWorker: false,
+  },
 };
 
 export default nextConfig;
