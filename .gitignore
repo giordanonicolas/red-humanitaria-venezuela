@@ -39,4 +39,8 @@ run_build.bat
 build_output.txt
 commit_security2.bat
 security_commit.ps1
+git_push.bat
+push_trigger.bat
+fix.bat
+build.bat
 *.fuse_hidden*
