@@ -44,3 +44,5 @@ push_trigger.bat
 fix.bat
 build.bat
 *.fuse_hidden*
+
+.fuse_hidden*
